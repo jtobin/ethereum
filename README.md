@@ -62,6 +62,12 @@ $ geth --genesis genesis.json \
   --datadir .localchain --networkid 3443 --nodiscover --maxpeers 0 account new
 ```
 
+Alternatively one can create an account from the console:
+
+```
+> personal.newAccount();
+```
+
 # Mining
 
 Set the miner's Etherbase to the desired account, e.g.
@@ -82,6 +88,8 @@ The genesis block can also be used to pre-allocate a bunch of ether.
 
 To check the state of the pending block, use `eth.getBlock('pending', true)`.
 There's also `eth.getBlock('latest')`.
+
+Note the existence of [this bug][bug].
 
 # Gas
 
@@ -106,6 +114,10 @@ To authorize an account to spend gas, do e.g.
 
 # Contracts
 
+Contracts are written in a high-level language; presently the most popular one
+seems to be Solidity.
+
+## Greeter
 Here is an example contract written in Solidity.
 
 ```
@@ -186,7 +198,67 @@ followed by metadata and a callback.
 If there are any errors you'll be able to see them in the `transactionHash` of
 the contract.
 
-To be executed the contract actually needs to be mined first.
+To be executed the contract actually needs to be mined.  See [mining](#mining).
+
+## Token
+
+Here's a more sophisticated contract example.  First the Solidity program.
+
+```
+contract token {
+  mapping (address => uint) public coinBalanceOf;
+  event CoinTransfer(address sender, address receiver, uint amount);
+
+  function token(unit supply) {
+    if (supply == 0) supply = 10000;
+    coinBalanceOf[msg.sender] = supply;
+    }
+
+  function sendCoin(address receiver, uint amount) returns(bool sufficient) {
+    if (coinBalanceOf[msg.sender] < amount) return false;
+    coinBalanceOf[msg.sender] -= amount;
+    coinBalanceOf[receiver] += amount;
+    CoinTransfer(msg.sender, receiver, amount);
+    return true;
+    }
+  }
+```
+
+Then the usual mumbojumbo - flatten, compile.
+
+```
+var tokenSource = 'contract token { mapping (address => uint) public coinBalanceOf; event CoinTransfer(address sender, address receiver, uint amount); function token(uint supply) { if (supply == 0) supply = 10000; coinBalanceOf[msg.sender] = supply; } function sendCoin(address receiver, uint amount) returns(bool sufficient) { if (coinBalanceOf[msg.sender] < amount) return false; coinBalanceOf[msg.sender] -= amount; coinBalanceOf[receiver] += amount; CoinTransfer(msg.sender, receiver, amount); return true; } }'
+
+var tokenCompiled = eth.compile.solidity(tokenSource)
+```
+
+Now, to deploy:
+
+```
+var tokenContract = web3.eth.contract(tokenCompiled.token.info.abiDefinition);
+
+var token = tokenContract.new(
+    10000
+  , { from:web3.eth.accounts[0]
+    , data:tokenCompiled.token.code
+    , gas: 1000000
+    }
+  , function(e, contract) {
+      if(!e) {
+        if(!contract.address) {
+        console.log(
+          "Contract transaction send: TransactionHash: " +
+          contract.transactionHash + " waiting to be mined...");
+      } else {
+        console.log("Contract mined! Address: " + contract.address);
+        console.log(contract);
+      }
+    }
+  })
+```
+
+
+
 
 [gas]: https://ethereum.stackexchange.com/questions/3/what-is-meant-by-the-term-gas
-
+[bug]: https://github.com/ethereum/go-ethereum/issues/2174
