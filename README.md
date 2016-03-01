@@ -89,7 +89,9 @@ The genesis block can also be used to pre-allocate a bunch of ether.
 To check the state of the pending block, use `eth.getBlock('pending', true)`.
 There's also `eth.getBlock('latest')`.
 
-Note the existence of [this bug][bug].
+Note the existence of [this bug][bug].  It can possibly be alleviated by
+allocating sufficient memory to the enclosing VM and restarting it, i.e. via
+`vagrant halt`.
 
 # Gas
 
@@ -116,6 +118,9 @@ To authorize an account to spend gas, do e.g.
 
 Contracts are written in a high-level language; presently the most popular one
 seems to be Solidity.
+
+There are some restrictions.  There is no such thing as an active loop, etc. so
+contracts always need to be pinged by someone.  Kind of annoying.
 
 ## Greeter
 Here is an example contract written in Solidity.
@@ -209,7 +214,7 @@ contract token {
   mapping (address => uint) public coinBalanceOf;
   event CoinTransfer(address sender, address receiver, uint amount);
 
-  function token(unit supply) {
+  function token(uint supply) {
     if (supply == 0) supply = 10000;
     coinBalanceOf[msg.sender] = supply;
     }
@@ -257,8 +262,23 @@ var token = tokenContract.new(
   })
 ```
 
+One can set up a 'watcher' in the console by hooking into the 'CoinTransfer'
+event.  This is pretty cool; presumably one could deploy entire contracts based
+on events:
 
-
+```
+var event = token.CoinTransfer({}, '', function(error, result) {
+  if (!error) {
+    console.log("coin transfer: " + result.args.amount + " tokens sent.");
+    console.log(
+      "balances:\n" +
+      "sender " + result.args.sender + ": " +
+        token.coinBalanceOf.call(result.args.sender) + "\n" +
+      "receiver " + result.args.receiver + ": " +
+        token.coinBalanceOf.call(result.args.receiver))
+    }
+  });
+```
 
 [gas]: https://ethereum.stackexchange.com/questions/3/what-is-meant-by-the-term-gas
 [bug]: https://github.com/ethereum/go-ethereum/issues/2174
