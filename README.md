@@ -176,7 +176,11 @@ Then one can use a standard create method to deploy it to the network.  Note
 that the deploying account must be authorized to spend gas; see [gas](#gas) for
 that.
 
-Here I'm deploying from jtobin's account.  The gas price is set to 300k wei:
+Contracts can specify a gas *limit* via the gas parameter.  For many contracts
+you'd want this to be pretty large.  Previously I had tried to set this as low
+as possible.
+
+Here I'm deploying from jtobin's account.  The gas limit is set to 300k wei:
 
 ```
 var greeter = greeterContract.new(

@@ -15,7 +15,7 @@ var token = tokenContract.new(
     10000
   , { from: jtobin
     , data: crowdCompiled.token.code
-    , gas:  300000
+    , gas:  3000000
     }
   , function(e, contract) {
       if(!e) {
@@ -49,7 +49,7 @@ var crowdsale = crowdContract.new(
   , _reward
   , { from: jtobin
     , data: crowdCompiled.Crowdsale.code
-    , gas: 300000
+    , gas: 3000000
     }
   , function(e, contract) {
       if (!e) {
