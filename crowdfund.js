@@ -1,7 +1,14 @@
 
 var jtobin = eth.accounts[0];
-personal.unlockAccount(jtobin, 'CNobor3sfSXed9cgKKMv');
 miner.setEtherbase(jtobin);
+
+personal.unlockAccount(jtobin, 'CNobor3sfSXed9cgKKMv');
+eth.sendTransaction({
+    from: jtobin
+  , to: eth.accounts[1]
+  , value: web3.toWei(100, 'ether')
+  , gas: 1000000
+  });
 
 /* crowdfunding contract */
 
@@ -21,10 +28,10 @@ var token = tokenContract.new(
       if(!e) {
         if(!contract.address) {
         console.log(
-          "Contract transaction send: TransactionHash: " +
-          contract.transactionHash + " waiting to be mined...");
+          "contract transaction send: hash " +
+          contract.transactionHash + " waiting to be mined");
       } else {
-        console.log("Contract mined! Address: " + contract.address);
+        console.log("contract mined, address " + contract.address);
       }
     }
   })
@@ -37,7 +44,7 @@ var crowdContract = eth.contract(crowdCompiled.Crowdsale.info.abiDefinition);
 
 var _beneficiary = jtobin;
 var _fundingGoal = parseInt(web3.toWei(100, 'ether'));
-var _duration    = 5;
+var _duration    = 10;
 var _price       = parseInt(web3.toWei(0.02, 'ether'));
 var _reward      = token.address;
 
@@ -61,4 +68,74 @@ var crowdsale = crowdContract.new(
             console.log("contract mined, address " + contract.address);
             }
         }});
+
+miner.start(2);
+admin.sleepBlocks(5);
+miner.stop(2);
+
+token.sendCoin.sendTransaction(crowdsale.address, 5000, { from: jtobin });
+
+console.log(
+    "Current crowdsale must raise "
+  + web3.fromWei(crowdsale.fundingGoal.call(), "ether")
+  + " ether in order to send it to "
+  + crowdsale.beneficiary.call() + ".");
+
+var fundWatcher = crowdsale.FundTransfer({}, '', function(error, result) {
+  if (!error) {
+    if (result.args.isContribution) {
+      console.log("\n new backer; received "
+        + web3.fromWei(result.args.amount, 'ether') + " ether from "
+        + result.args.backer);
+      console.log("\n current funding is at "
+      + (100 * crowdsale.amountRaised.call() / crowdsale.fundingGoal.call())
+      + "% of goal.");
+      console.log("\n funders have contributed "
+      + web3.fromWei(crowdsale.amountRaised.call(), 'ether') + " ether.");
+
+      var timeLeft = Math.floor(Date.now() / 1000) - crowdsale.deadline();
+
+      if (timeLeft > 3600) {
+        console.log('deadline passed ' + Math.floor(timeLeft / 3600)
+          + ' hours ago.');
+        } else if (timeLeft > 0) {
+        console.log('deadline passed ' + Math.floor(timeLeft / 60)
+          + ' minutes ago.');
+        } else if (timeLeft > -3600) {
+        console.log(Math.floor(-1 * timeLeft / 60)
+          + ' minutes until deadline.');
+        } else {
+          console.log(Math.floor(-1 * timeLeft / 3600)
+            + ' hours until deadline.');
+          }
+      } else {
+        console.log('funds transferred from crowdsale account:\n'
+          + web3.fromWei(result.args.amount, 'ether')
+          + ' ether to ' + result.args.backer);
+      }
+    }
+  });
+
+personal.unlockAccount(eth.accounts[1], 'password');
+eth.sendTransaction({
+    from:  eth.accounts[1]
+  , to:    crowdsale.address
+  , value: web3.toWei(10, 'ether')
+  , gas:   1000000
+  });
+
+eth.sendTransaction({
+    from:  eth.accounts[1]
+  , to:    crowdsale.address
+  , value: web3.toWei(90, 'ether')
+  , gas:   1000000
+  });
+
+personal.unlockAccount(jtobin, 'CNobor3sfSXed9cgKKMv');
+
+/* must be run after deadline */
+crowdsale.checkGoalReached.sendTransaction({
+    from: jtobin
+  , gas:  1000000
+  });
 
