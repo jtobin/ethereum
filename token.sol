@@ -2,7 +2,7 @@ contract token {
   mapping (address => uint) public coinBalanceOf;
   event CoinTransfer(address sender, address receiver, uint amount);
 
-  function token(unit supply) {
+  function token(uint supply) {
     if (supply == 0) supply = 10000;
     coinBalanceOf[msg.sender] = supply;
     }
