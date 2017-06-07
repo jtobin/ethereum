@@ -1,5 +1,10 @@
 
-# Setting up / launching console
+# Ethereum Notes
+
+**NOTE (2017/06/07)**: These notes are out of date by about a year and a half
+and could use some updating.
+
+## Setting up / launching console
 
 Requirements:
 
