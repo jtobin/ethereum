@@ -2,11 +2,12 @@
 # Ethereum Notes
 
 **NOTE (2017/06/07)**: These notes are out of date by about a year and a half
-and could use some updating.
+and are in some slow process of updating.
 
 ## Setting up / launching console
 
-Requirements:
+(Largely gleaned from [here][geth-private], [here][med-private], and
+[here][ethdocs])
 
 * Genesis file
 * Custom data directory
@@ -15,62 +16,62 @@ Requirements:
 
 The genesis file is the first block of the local blockchain.
 
-Here's an example genesis file:
+Here's an example genesis file, `genesis.json`:
 
 ```
 {
-    "nonce": "0xcafebabecafebabe",
-    "timestamp": "0x0",
-    "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-    "extraData": "0x0",
-    "gasLimit": "0xfffffff",
-    "difficulty": "0x400",
-    "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-    "coinbase": "0x3333333333333333333333333333333333333333",
+    "config": {
+        "chainId": 15,
+        "homesteadBlock": 0,
+        "eip155Block": 0,
+        "eip158Block": 0
+    },
+    "difficulty": "200000000",
+    "gasLimit": "2100000",
     "alloc": {
+        "7df9a875a174b3bc565e6424a0050ebc1b2d1d82": { "balance": "300000" },
+        "f41c74c9ae680c1aa78f42e5647a62f353b7bdde": { "balance": "400000" }
     }
 }
 ```
 
 ## Custom data directory
 
-To store the blockchain use a directory like `.localchain`.  So:
+To store the blockchain use a directory like `localchain`.  So:
 
 ```
-$ mkdir .localchain
+$ mkdir localchain
 ```
 
 ## The rest
 
 Command line options I'll need:
 
-* Specify the genesis file via  `--genesis GENESIS_FILE`.
-* `--nodiscover` ensures the local node is not discoverable by others.  Similarly
+* `--nodiscover` ensures the local node is not discoverable by others.
 * `--maxpeers 0` ensures that nobody else can join.
 * `--datadir foo` specifies the directory to store the local blockchain in
 * `--networkid foo` specifies the id for the local network
 
-So, to get started:
+One can initialize the local blockchain like so:
 
 ```
-$ geth --genesis genesis.json \
-  --datadir .localchain --networkid 3443 --nodiscover --maxpeers 0 console
+$ geth --datadir localchain init genesis.json
 ```
 
-All `geth` commands that want to use that network/blockchain must specify that
-as well.
-
-An account is needed, so:
+Then to get started w/that blockchain and the console:
 
 ```
-$ geth --genesis genesis.json \
-  --datadir .localchain --networkid 3443 --nodiscover --maxpeers 0 account new
+$ geth --datadir localchain --networkid 42 --nodiscover --maxpeers 0 console
 ```
 
-Alternatively one can create an account from the console:
+One can create an account from the console like so:
 
 ```
 > personal.newAccount();
+Passphrase: <hoobajooba>
+Repeat passphrase: <hoobajooba>
+> eth.accounts;
+["0x8a9f437f3965cc0354a095b8e9fa8162e6c98aad"]
 ```
 
 # Mining
@@ -85,18 +86,15 @@ Set the miner's Etherbase to the desired account, e.g.
 Then kick it off by specifying a number of threads to mine with:
 
 ```
-> miner.start(2);
-> miner.stop(2);
+> miner.start(1);
+> miner.stop(1);
 ```
 
-The genesis block can also be used to pre-allocate a bunch of ether.
+The first time you kick this off will involve generating a DAG, which takes
+a few minutes.
 
 To check the state of the pending block, use `eth.getBlock('pending', true)`.
 There's also `eth.getBlock('latest')`.
-
-Note the existence of [this bug][bug].  It can possibly be alleviated by
-allocating sufficient memory to the enclosing VM and restarting it, i.e. via
-`vagrant halt`.
 
 # Gas
 
@@ -291,3 +289,6 @@ var event = token.CoinTransfer({}, '', function(error, result) {
 
 [gas]: https://ethereum.stackexchange.com/questions/3/what-is-meant-by-the-term-gas
 [bug]: https://github.com/ethereum/go-ethereum/issues/2174
+[geth-private]: https://github.com/ethereum/go-ethereum/wiki/Private-network
+[med-private]: https://medium.com/blockchain-education-network/use-geth-to-setup-your-own-private-ethereum-blockchain-86f1200e6d40
+[ethdocs]: http://www.ethdocs.org/en/latest/network/test-networks.html#setting-up-a-local-private-testnet
